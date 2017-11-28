@@ -64,7 +64,7 @@ RUN YARN_VERSION=$(curl -sSL --compressed https://yarnpkg.com/latest-version) \
   && rm yarn-v$YARN_VERSION.tar.gz.asc yarn-v$YARN_VERSION.tar.gz
 
   RUN apt-get update
-  RUN apt-get -qq install git-ftp
+  RUN apt-get -qq install lftp
   RUN git config --global user.email "git@rocket.ch"
   RUN git config --global user.name "Gitlab CI Runner"
   RUN gem install sass
