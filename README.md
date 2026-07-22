@@ -1,23 +1,50 @@
-`docker build . -t psiegfried/rocket-theme-ci`  
-`docker push psiegfried/rocket-theme-ci`
+# wp-dev-ci
 
+Public CI image for WordPress-related PHP and Node build workflows.
 
-psiegfried/rocket-theme-ci-build:node-21
-gitlab-runner exec shell push_dev --env "FTP_URL_MASTER=test"
-docker run -it --rm -v "$(pwd)":/mount psiegfried/rocket-theme-ci-build:node-21 bash
- docker run -it --rm -v "$(pwd)":/mount psiegfried/rocket-theme-ci-build:node-21 bash
+## Image location
 
-ext-pdo *
-ext-session *
-ext-tokenizer *
-ext-fileinfo *
-ext-tokenizer *
+Published image target:
 
+ghcr.io/viwiv-gmbh/wp-dev-ci
 
+## Local build
 
-docker build . -t psiegfried/rocket-theme-ci-build:node-21-update --no-cache --platform linux/amd64
-docker build . -t psiegfried/rocket-theme-ci-build:node-21-update --no-cache --platform linux/arm64
+docker build -t ghcr.io/viwiv-gmbh/wp-dev-ci:node-21 .
 
+## Local run
 
-docker build . -t psiegfried/rocket-theme-ci-build:node-22-update --no-cache --platform linux/amd64
-docker push psiegfried/rocket-theme-ci-build:node-22-update
+docker run -it --rm -v "$(pwd)":/mount ghcr.io/viwiv-gmbh/wp-dev-ci:node-21 bash
+
+## Multi-architecture build examples
+
+docker build --platform linux/amd64 -t ghcr.io/viwiv-gmbh/wp-dev-ci:node-21-amd64 .
+docker build --platform linux/arm64 -t ghcr.io/viwiv-gmbh/wp-dev-ci:node-21-arm64 .
+
+## Included toolchain (high level)
+
+- Node.js 21 (Alpine base)
+- npm (latest)
+- PHP 8.2 with common extensions (pdo, session, tokenizer, fileinfo, xml, redis, sqlite, mysql)
+- Composer
+- build tools (make, g++, rsync, openssh, zip, unzip)
+
+## Automated release
+
+This repository includes a GitHub Actions workflow that:
+
+- Builds multi-arch images for linux/amd64 and linux/arm64
+- Publishes to GHCR
+- Runs Trivy vulnerability scanning on pull requests
+
+The publish workflow runs on:
+
+- Pushes to main
+- Version tags matching v*
+- Manual workflow dispatch
+
+## Maintenance contract boundaries
+
+- This is a generic public image service repository.
+- Consumers should pin explicit tags and test before adopting updates.
+- Security disclosures should follow SECURITY.md.
