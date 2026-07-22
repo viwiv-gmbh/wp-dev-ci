@@ -6,20 +6,20 @@ Public CI image for WordPress-related PHP and Node build workflows.
 
 Published image target:
 
-ghcr.io/viwiv-gmbh/wp-dev-ci
+viwiv/wp-dev-ci (Docker Hub)
 
 ## Local build
 
-docker build -t ghcr.io/viwiv-gmbh/wp-dev-ci:node-21 .
+docker build -t viwiv/wp-dev-ci:node-21 .
 
 ## Local run
 
-docker run -it --rm -v "$(pwd)":/mount ghcr.io/viwiv-gmbh/wp-dev-ci:node-21 bash
+docker run -it --rm -v "$(pwd)":/mount viwiv/wp-dev-ci:node-21 bash
 
 ## Multi-architecture build examples
 
-docker build --platform linux/amd64 -t ghcr.io/viwiv-gmbh/wp-dev-ci:node-21-amd64 .
-docker build --platform linux/arm64 -t ghcr.io/viwiv-gmbh/wp-dev-ci:node-21-arm64 .
+docker build --platform linux/amd64 -t viwiv/wp-dev-ci:node-21-amd64 .
+docker build --platform linux/arm64 -t viwiv/wp-dev-ci:node-21-arm64 .
 
 ## Included toolchain (high level)
 
@@ -34,8 +34,13 @@ docker build --platform linux/arm64 -t ghcr.io/viwiv-gmbh/wp-dev-ci:node-21-arm6
 This repository includes a GitHub Actions workflow that:
 
 - Builds multi-arch images for linux/amd64 and linux/arm64
-- Publishes to GHCR
+- Publishes to Docker Hub (`viwiv/wp-dev-ci`)
 - Runs Trivy vulnerability scanning on pull requests
+
+Required repository secrets for publish:
+
+- `DOCKERHUB_USERNAME`
+- `DOCKERHUB_TOKEN`
 
 The publish workflow runs on:
 
