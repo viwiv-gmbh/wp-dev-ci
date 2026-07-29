@@ -1,0 +1,15 @@
+{
+  "_note": "Copy to wp-ci.config.json at the plugin's repo root, then adjust file names/paths to match the plugin.",
+  "type": "plugin",
+  "versionTargets": [
+    { "file": "package.json", "type": "json", "path": "version" },
+    { "file": "example-plugin.php", "type": "header", "field": "Version" },
+    { "file": "example-plugin.php", "type": "constant", "name": "EXAMPLE_PLUGIN_VERSION" },
+    { "file": "readme.txt", "type": "wp-readme-stable-tag" }
+  ],
+  "changelogFile": "CHANGELOG.md",
+  "packageZip": {
+    "directory": "dist",
+    "slug": "example-plugin"
+  }
+}

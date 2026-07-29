@@ -1,0 +1,19 @@
+{
+  "_note": "Copy to wp-ci.config.json at the block's repo root, then adjust file names/paths to match the block.",
+  "type": "block",
+  "versionTargets": [
+    { "file": "package.json", "type": "json", "path": "version" },
+    { "file": "block.json", "type": "json", "path": "version" },
+    {
+      "file": "example-block.php",
+      "type": "header",
+      "field": "Version",
+      "_note": "only if the block ships wrapped in a plugin bootstrap file - remove otherwise"
+    }
+  ],
+  "changelogFile": "CHANGELOG.md",
+  "packageZip": {
+    "directory": "dist",
+    "slug": "example-block"
+  }
+}
