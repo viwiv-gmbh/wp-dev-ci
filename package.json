@@ -7,6 +7,10 @@
   "engines": {
     "node": ">=22.14"
   },
+  "scripts": {
+    "test:pipeline:scan-pr": "act pull_request -j scan-pr --container-architecture linux/amd64 -P ubuntu-latest=catthehacker/ubuntu:act-latest",
+    "test:pipeline:build-and-push": "act workflow_dispatch -j build-and-push --container-architecture linux/amd64 -P ubuntu-latest=catthehacker/ubuntu:act-latest -s DOCKERHUB_USERNAME=local-dry-run -s DOCKERHUB_TOKEN=local-dry-run"
+  },
   "dependencies": {
     "semantic-release": "25.0.8",
     "@semantic-release/commit-analyzer": "13.0.1",

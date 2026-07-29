@@ -65,6 +65,44 @@ The publish workflow runs on:
 - Version tags matching v*
 - Manual workflow dispatch
 
+## Testing the release pipeline locally
+
+GitHub-hosted runners aren't free, so exercise `.github/workflows/release-image.yml`
+locally with [`act`](https://github.com/nektos/act) (runs Actions jobs in Docker)
+before pushing:
+
+```
+brew install act   # once
+npm run test:pipeline:scan-pr          # builds the image + runs the Trivy scan job
+npm run test:pipeline:build-and-push   # exercises QEMU/buildx setup + Docker Hub login
+```
+
+Requirements: Docker running locally, `act` on `PATH`. First run downloads
+the `catthehacker/ubuntu:act-latest` runner image (~500MB) and caches it.
+
+What each script actually proves, and its limits:
+
+- **`test:pipeline:scan-pr`** builds the real `Dockerfile` inside the runner
+  container - this is the meaningful part, and a broken `Dockerfile`/`npm ci`/
+  baked-in script will show up here exactly as it would in CI. The job then
+  fails at the Trivy step regardless: `aquasecurity/setup-trivy@v0.2.2` can't
+  resolve the `trivy` binary inside `act`'s emulated runner
+  (`trivy: command not found`), a known `act` limitation, not a workflow bug.
+  Read the log for the `Build image for scan` step's result; a failure there
+  is real, a failure at `Run Trivy` in isolation is expected locally.
+- **`test:pipeline:build-and-push`** uses hard-coded fake credentials
+  (`local-dry-run`/`local-dry-run`) on purpose - it verifies QEMU setup and
+  the Buildx multi-arch builder come up correctly, then is *expected* to fail
+  at the "Login to Docker Hub" step (`unauthorized: incorrect username or
+  password`). That failure is the safety mechanism: it proves the job cannot
+  reach the actual `docker build --push` step without real secrets, so
+  running it never touches Docker Hub. The `docker/metadata-action` tag
+  logic and the real multi-arch push can only be verified by an actual
+  GitHub Actions run with real `DOCKERHUB_TOKEN`/`DOCKERHUB_USERNAME` secrets.
+
+Both scripts therefore exit non-zero on a *successful* local test run - check
+the log for which step failed and why, don't rely on the exit code alone.
+
 ## Maintenance contract boundaries
 
 - This is a generic public image service repository.
