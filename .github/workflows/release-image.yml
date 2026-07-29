@@ -27,7 +27,7 @@ jobs:
         run: docker build -t local-scan-image:${{ github.sha }} .
 
       - name: Run Trivy scan
-        uses: aquasecurity/trivy-action@0.30.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: local-scan-image:${{ github.sha }}
           format: sarif
@@ -67,7 +67,7 @@ jobs:
           images: ${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
-            type=raw,value=node-21,enable={{is_default_branch}}
+            type=raw,value=node-22,enable={{is_default_branch}}
             type=semver,pattern={{version}},value=${{ github.ref_name }}
             type=semver,pattern={{major}}.{{minor}},value=${{ github.ref_name }}
             type=sha,prefix=sha-

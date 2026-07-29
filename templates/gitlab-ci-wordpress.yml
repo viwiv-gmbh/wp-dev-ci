@@ -1,0 +1,152 @@
+# Reusable GitLab CI pipeline for WordPress plugins/themes/blocks that build
+# with this image (rocket-gmbh/rocket-theme-ci, published as
+# viwiv/wp-dev-ci) and its baked-in scripts/semantic-release toolchain.
+#
+# Consumer project setup:
+#   include:
+#     - project: 'rocket-gmbh/rocket-theme-ci'
+#       ref: v1.0.0                              # pin to a tag, not a branch
+#       file: '/templates/gitlab-ci-wordpress.yml'
+#
+# Consumer project must additionally provide:
+#   - wp-ci.config.json               (see templates/wp-ci.config.*.example.json)
+#   - .releaserc.json                 (copy templates/releaserc.json, adjust assets)
+#   - package.json with "lint", "test", "build" and "package" npm scripts
+#     ("package" must produce dist/<slug>-<version>.zip - see wp-ci.config.json's
+#     packageZip.slug)
+#   - a masked, protected GITLAB_TOKEN CI/CD variable (api scope) so
+#     @semantic-release/gitlab can create the tag/release
+#   - protected branch "main" and protected tag pattern "v*", limited to
+#     maintainers/no one, so only the release job (running as CI) can push
+#     the release commit and tag
+#
+# See docs/WORDPRESS-CI-WORKFLOW.md in this repository for the full write-up.
+
+variables:
+  WP_CI_IMAGE: "viwiv/wp-dev-ci:node-22"
+  # semantic-release's commit-analyzer needs the full commit history to find
+  # the last release tag, and the MR diff checks need the target branch's
+  # history too - a shallow clone would silently make both checks pass wrongly.
+  GIT_DEPTH: "0"
+
+default:
+  image: $WP_CI_IMAGE
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - node_modules/
+
+stages:
+  - validate
+  - test
+  - build
+  - release
+
+# ---------------------------------------------------------------------------
+# validate: cheap, fast checks against MR metadata/diff - fail before
+# spending time on install/test/build.
+# ---------------------------------------------------------------------------
+
+validate:mr-title:
+  stage: validate
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  script:
+    # $CI_MERGE_REQUEST_TITLE only exists in MR pipelines - commit-analyzer
+    # reads the (squash) commit message, so a malformed title here means a
+    # merge that silently releases the wrong version bump (or nothing at all).
+    - node "$WP_CI_SCRIPTS/validate-mr-title.mjs"
+
+validate:documentation:
+  stage: validate
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  script:
+    # Enforces the documentation policy: exactly one option checked in the MR
+    # description, and the file it names actually touched. See the MR
+    # description template in templates/merge_request_templates/Default.md.
+    - node "$WP_CI_SCRIPTS/check-documentation.mjs"
+
+validate:generated-files:
+  stage: validate
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  script:
+    # CHANGELOG.md and every version field are written exclusively by
+    # set-version.mjs during the release job - rejects any manual edit here.
+    - node "$WP_CI_SCRIPTS/check-generated-files.mjs"
+
+validate:versions:
+  stage: validate
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  script:
+    # Independent of what this MR changed: all configured version sources
+    # must already agree with each other and be valid semver.
+    - node "$WP_CI_SCRIPTS/verify-version.mjs"
+
+# ---------------------------------------------------------------------------
+# test / build: ordinary MR pipeline, and re-run on main immediately before a
+# release is allowed to happen. Commands are intentionally project-specific
+# (npm scripts) since a plugin, theme, and block build differently - only the
+# *sequence and gates* are fixed here, not the build tooling.
+# ---------------------------------------------------------------------------
+
+lint:
+  stage: test
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  script:
+    - npm ci
+    - npm run lint
+
+test:
+  stage: test
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  script:
+    - npm ci
+    - npm test
+
+build:
+  stage: build
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  script:
+    - npm ci
+    - npm run build
+    - npm run package
+    # Proves the packaging step produces a correctly named, checksummable
+    # artifact against whatever version is currently checked in. The MR build
+    # never ships - the release job rebuilds after semantic-release bumps the
+    # version, so this is a build-correctness gate, not the shipped artifact.
+    - node "$WP_CI_SCRIPTS/verify-package.mjs"
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1 week
+
+# ---------------------------------------------------------------------------
+# release: the ONLY job allowed to create a version tag or GitLab Release.
+# resource_group serializes it so two pipelines on main can never run
+# semantic-release concurrently and race each other's tag/CHANGELOG commit.
+# ---------------------------------------------------------------------------
+
+release:
+  stage: release
+  resource_group: release
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
+  script:
+    - npm ci
+    # semantic-release drives everything from here: analyzes commits since
+    # the last v* tag, decides the next version, regenerates CHANGELOG.md,
+    # runs set-version.mjs + build + package + checksum + verify-package.mjs
+    # (see .releaserc.json's @semantic-release/exec prepareCmd), commits the
+    # result, creates the v${version} tag, and publishes the GitLab Release
+    # with the package ZIP and checksum attached.
+    - semantic-release

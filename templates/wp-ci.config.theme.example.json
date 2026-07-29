@@ -1,0 +1,19 @@
+{
+  "_note": "Copy to wp-ci.config.json at the theme's repo root, then adjust file names/paths to match the theme.",
+  "type": "theme",
+  "versionTargets": [
+    { "file": "package.json", "type": "json", "path": "version" },
+    { "file": "style.css", "type": "header", "field": "Version" },
+    {
+      "file": "functions.php",
+      "type": "constant",
+      "name": "EXAMPLE_THEME_VERSION",
+      "_note": "optional - remove this entry if the theme has no version constant"
+    }
+  ],
+  "changelogFile": "CHANGELOG.md",
+  "packageZip": {
+    "directory": "dist",
+    "slug": "example-theme"
+  }
+}
