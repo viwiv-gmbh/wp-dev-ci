@@ -13,8 +13,35 @@ env:
   IMAGE_NAME: viwiv/wp-dev-ci
 
 jobs:
+  # Skips scan-pr/build-and-push when nothing that affects the built image
+  # changed. Only filters PRs and branch pushes - a v* tag push has no prior
+  # commit to diff against (GitHub reports zero changed files for it), so
+  # tag pushes and manual dispatch bypass this job entirely and always run.
+  changes:
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref_type == 'branch')
+    runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.filter.outputs.image }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check for image-relevant changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            image:
+              - 'Dockerfile'
+              - '.dockerignore'
+              - 'package.json'
+              - 'package-lock.json'
+              - 'scripts/**'
+              - '.github/workflows/release-image.yml'
+
   scan-pr:
-    if: github.event_name == 'pull_request'
+    needs: changes
+    if: github.event_name == 'pull_request' && needs.changes.outputs.image == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -40,7 +67,11 @@ jobs:
           sarif_file: trivy-results.sarif
 
   build-and-push:
-    if: github.event_name != 'pull_request'
+    needs: changes
+    if: |
+      always() &&
+      github.event_name != 'pull_request' &&
+      (github.event_name == 'workflow_dispatch' || github.ref_type == 'tag' || needs.changes.outputs.image == 'true')
     runs-on: ubuntu-latest
     permissions:
       contents: read
