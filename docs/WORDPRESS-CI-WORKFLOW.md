@@ -32,6 +32,12 @@ in the project.
 
 ## Setting up a new consuming project
 
+Steps 1-5 below are file changes only and can be delegated to Claude Code:
+copy [`templates/CLAUDE-CODE-SETUP.md`](../templates/CLAUDE-CODE-SETUP.md)
+into the consuming project's repo (or paste its contents into a Claude Code
+session opened there) and have it work through the checklist. Step 6 needs
+GitLab project-settings/admin access an agent won't have, so it stays manual.
+
 1. Add `.gitlab-ci.yml`:
 
    ```yaml

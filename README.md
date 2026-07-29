@@ -103,6 +103,18 @@ What each script actually proves, and its limits:
 Both scripts therefore exit non-zero on a *successful* local test run - check
 the log for which step failed and why, don't rely on the exit code alone.
 
+- **`scan-pr` and `build-and-push` only run when a file listed in the
+  `changes` job's `dorny/paths-filter` filter (`Dockerfile`,
+  `.dockerignore`, `package.json`, `package-lock.json`, `scripts/**`, or the
+  workflow file itself) actually changed** - a PR/push touching only
+  `docs/`, `templates/`, or `README.md` skips both jobs on real GitHub.
+  `act`'s synthetic `pull_request` event has no real base/head diff, so it
+  may report zero changed files and skip `scan-pr` locally even when
+  testing a real Dockerfile change - a local `act` artifact, not a workflow
+  bug. `test:pipeline:build-and-push` is unaffected (`workflow_dispatch`
+  always bypasses the filter) and remains the reliable local check that the
+  real `Dockerfile` still builds via buildx.
+
 ## Maintenance contract boundaries
 
 - This is a generic public image service repository.

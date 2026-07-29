@@ -1,0 +1,19 @@
+# Only package.json, package-lock.json, and scripts/ are ever COPYed into
+# the image (see Dockerfile) - everything else here just bloats the build
+# context sent to the daemon on every `docker build`.
+.git/
+.github/
+.claude/
+docs/
+templates/
+README.md
+SECURITY.md
+LICENSE
+
+node_modules/
+*.log
+.DS_Store
+.env
+.env.*
+.vscode/
+.idea/
