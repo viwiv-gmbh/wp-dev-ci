@@ -183,17 +183,16 @@ them.
    - `lint`, `test`, `build`: whatever the project already uses.
    - `package`: must zip the build output to
      `<packageZip.directory>/<packageZip.slug>-<version>.zip` (matching the
-     `packageZip` values from step 3). The `zip` CLI is already present in
-     the `wp-dev-ci` image at CI time. Example for a project that packages
-     straight from the repo root:
+     `packageZip` values from step 3). For projects with an rsync allowlist,
+     use the centralized image script:
 
      ```json
-     "package": "mkdir -p dist && zip -r dist/example-plugin-$(node -p \"require('./package.json').version\").zip . -x 'node_modules/*' 'dist/*' '.git/*'"
+     "package": "bash \"$WP_CI_SCRIPTS/build-zip.sh\" \"$npm_package_version\" example-plugin"
      ```
 
-     Replace `example-plugin` with the real `packageZip.slug`, and add
-     `-x` excludes for anything else that shouldn't ship (`.gitlab-ci.yml`,
-     `tests/*`, etc).
+     Replace `example-plugin` with the real `packageZip.slug`. Keep the
+     project-specific file selection in `dist.include`; the shared builder
+     stages that allowlist and removes stale ZIP/checksum artifacts.
 
 ## What to report back instead of doing
 
