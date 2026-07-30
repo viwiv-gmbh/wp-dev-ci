@@ -23,11 +23,11 @@ docker build --platform linux/arm64 -t viwiv/wp-dev-ci:node-22-arm64 .
 
 ## Included toolchain (high level)
 
-- Node.js 22 (Alpine 3.20 base - see [docs/WORDPRESS-CI-WORKFLOW.md](docs/WORDPRESS-CI-WORKFLOW.md#image-maintenance-notes))
+- Node.js 22.23.1 (Debian Bookworm base - see [docs/WORDPRESS-CI-WORKFLOW.md](docs/WORDPRESS-CI-WORKFLOW.md#image-maintenance-notes))
 - npm (latest), git
 - PHP 8.2 with common extensions (pdo, session, tokenizer, fileinfo, xml, redis, sqlite, mysql)
 - Composer
-- build tools (make, g++, rsync, openssh, zip, unzip)
+- build tools (make, g++, rsync, OpenSSH client, zip, unzip)
 - a pinned `semantic-release` toolchain (+ commit-analyzer, release-notes-generator,
   changelog, git, gitlab, exec plugins) and a set of version-sync/validation
   Node and shell scripts, baked in at `/opt/wp-ci` (`$WP_CI_SCRIPTS`) - see below

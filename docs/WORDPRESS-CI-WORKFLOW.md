@@ -196,11 +196,10 @@ and - for options with a required path - checks it against the MR diff.
 
 ## Image maintenance notes
 
-- `Dockerfile` pins `node:22-alpine3.20` rather than `node:22-alpine`: Alpine
-  3.24+ dropped the `php82` package in favor of `php83`/`php84`. Pinning the
-  Alpine release keeps the PHP 8.2 runtime this image has always shipped
-  unchanged while still getting a Node runtime new enough for
-  `semantic-release` 25.x (`^22.14.0 || >=24.10.0`).
+- `Dockerfile` pins `node:22.23.1-bookworm-slim`. Node 22.23.1 satisfies the
+  strictest engine requirement in the pinned release toolchain (`^22.22.2 ||
+  >=24.15`). Debian Bookworm keeps PHP 8.2 available after the official Node
+  images stopped publishing current Node 22 patch releases for Alpine 3.20.
 - `git` was added to the package list - previously absent, but
   `semantic-release`'s plugins (`commit-analyzer`, `git`, `gitlab`) all shell
   out to it directly.

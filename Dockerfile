@@ -1,50 +1,40 @@
-# Pinned to alpine3.20 (not just "22-alpine") so the OS package repo still
-# carries php82 - Alpine 3.24+ dropped it in favor of php83/84. This keeps the
-# PHP runtime this image ships for WordPress builds unchanged while bumping
-# only the Node runtime semantic-release needs (see the toolchain section below).
-FROM node:22-alpine3.20
+# Debian Bookworm provides PHP 8.2 while allowing the Node runtime to be pinned
+# to the exact patch release required by the semantic-release toolchain.
+FROM node:22.23.1-bookworm-slim
 
 LABEL org.opencontainers.image.title="wp-dev-ci" \
     org.opencontainers.image.description="Public CI image for WordPress and PHP/Node build workflows" \
     org.opencontainers.image.source="https://github.com/viwiv-gmbh/wp-dev-ci" \
     org.opencontainers.image.licenses="MIT"
 
-RUN apk add --no-cache \
-    bash \
-    curl \
-    g++ \
-    git \
-    make \
-    nginx \
-    openssh \
-    php82 \
-    php82-cli \
-    php82-common \
-    php82-curl \
-    php82-dom \
-    php82-fileinfo \
-    php82-fpm \
-    php82-iconv \
-    php82-json \
-    php82-mbstring \
-    php82-opcache \
-    php82-openssl \
-    php82-pdo \
-    php82-pdo_mysql \
-    php82-pdo_sqlite \
-    php82-pecl-redis \
-    php82-phar \
-    php82-simplexml \
-    php82-tokenizer \
-    php82-xml \
-    php82-xmlwriter \
-    php82-zip \
-    rsync \
-    sqlite \
-    supervisor \
-    unzip \
-    zip && \
-        ln -sf /usr/bin/php82 /usr/bin/php
+RUN apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        bash \
+        ca-certificates \
+        curl \
+        g++ \
+        git \
+        make \
+        nginx \
+        openssh-client \
+        php8.2-cli \
+        php8.2-common \
+        php8.2-curl \
+        php8.2-fpm \
+        php8.2-mbstring \
+        php8.2-mysql \
+        php8.2-opcache \
+        php8.2-redis \
+        php8.2-sqlite3 \
+        php8.2-xml \
+        php8.2-zip \
+        rsync \
+        sqlite3 \
+        supervisor \
+        unzip \
+        zip \
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -sf /usr/bin/php8.2 /usr/bin/php
 
 COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
 
