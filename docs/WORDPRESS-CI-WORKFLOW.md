@@ -19,16 +19,19 @@ Instead:
 
 - `semantic-release` and its six plugins are installed once, at image build
   time, pinned by this repo's `package-lock.json` (`Dockerfile`).
-- The validation/version scripts (`scripts/*.mjs`) are copied into the image
-  at `/opt/wp-ci/scripts`, exposed to every job as `$WP_CI_SCRIPTS`.
-- Consumer pipelines call `semantic-release` and `node $WP_CI_SCRIPTS/<script>.mjs`
-  directly - nothing to install, identical behavior on every run, and a
+- Validation/version scripts and shared packaging/updater utilities (`scripts/`)
+  are copied into the image at `/opt/wp-ci/scripts`, exposed to every job as
+  `$WP_CI_SCRIPTS`.
+- Consumer pipelines call `semantic-release`, `node $WP_CI_SCRIPTS/<script>.mjs`,
+  or `bash $WP_CI_SCRIPTS/<script>.sh` directly - nothing to install,
+  identical behavior on every run, and a
   single place (this repo) to patch a bug in the release logic for every
   project using the image.
 
-A given plugin/theme/block still keeps its own `package.json` for its own
-`lint`/`test`/`build`/`package` scripts - those are project-specific and stay
-in the project.
+A given plugin/theme/block still keeps its own `package.json`. Its
+`lint`/`test`/`build` commands remain project-specific. Projects using an
+rsync allowlist can point `package` at `$WP_CI_SCRIPTS/build-zip.sh`; only the
+project-specific `dist.include` allowlist stays in the consumer repository.
 
 ## Setting up a new consuming project
 
@@ -55,9 +58,9 @@ GitLab project-settings/admin access an agent won't have, so it stays manual.
    `.gitlab/merge_request_templates/Default.md`.
 5. In the project's `package.json`, add:
    - `lint`, `test`, `build` scripts (whatever the project already uses)
-   - a `package` script that zips the build output to
-     `<packageZip.directory>/<packageZip.slug>-<version>.zip` (e.g. using the
-     `zip` CLI already present in the image)
+   - a `package` script that produces
+     `<packageZip.directory>/<packageZip.slug>-<version>.zip`; projects with a
+     `dist.include` allowlist can call the shared `build-zip.sh`
 6. In GitLab project settings:
    - protect the `main` branch and the `v*` tag pattern (allowed to push:
      no one/maintainers only - the release job pushes via `GITLAB_TOKEN`)

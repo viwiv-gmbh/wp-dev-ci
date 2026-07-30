@@ -30,7 +30,7 @@ docker build --platform linux/arm64 -t viwiv/wp-dev-ci:node-22-arm64 .
 - build tools (make, g++, rsync, openssh, zip, unzip)
 - a pinned `semantic-release` toolchain (+ commit-analyzer, release-notes-generator,
   changelog, git, gitlab, exec plugins) and a set of version-sync/validation
-  Node scripts, baked in at `/opt/wp-ci` (`$WP_CI_SCRIPTS`) - see below
+  Node and shell scripts, baked in at `/opt/wp-ci` (`$WP_CI_SCRIPTS`) - see below
 
 ## WordPress semantic-release pipeline
 
@@ -40,11 +40,33 @@ Conventional Commits validation, generated-file/version protection, a
 documentation policy gate, and a `semantic-release`-driven release job that
 tags, changelogs, and publishes a GitLab Release with a checksummed ZIP.
 
-- `scripts/` - the validation/version scripts, copied into the image
+- `scripts/` - validation, versioning, packaging, checksum, and updater-metadata
+  scripts copied into the image and exposed through `$WP_CI_SCRIPTS`
 - `templates/` - copyable `.gitlab-ci.yml` include, `.releaserc.json`,
   `wp-ci.config.json` examples (plugin/theme/block), and an MR description
   template
 - **Full walkthrough:** [docs/WORDPRESS-CI-WORKFLOW.md](docs/WORDPRESS-CI-WORKFLOW.md)
+
+### Shared release scripts
+
+Projects with a `dist.include` rsync allowlist can use the shared ZIP builder:
+
+```bash
+bash "$WP_CI_SCRIPTS/build-zip.sh" VERSION example-plugin
+```
+
+The arguments are version, package slug, optional output directory (default
+`dist`), and optional allowlist path (default `dist.include`). The builder
+removes stale ZIP/checksum artifacts before creating the current package.
+
+Plugin deployment jobs can generate updater metadata without a project-local
+script:
+
+```bash
+bash "$WP_CI_SCRIPTS/generate-update-json.sh" \
+  example-plugin.php dist/example-plugin-update.json \
+  https://plugins.example.com/example-plugin.zip
+```
 
 ## Automated release
 

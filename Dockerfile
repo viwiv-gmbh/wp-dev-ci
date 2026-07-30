@@ -54,10 +54,11 @@ COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
 # Consumer pipelines (WordPress plugins/themes/blocks using this image) must
 # never run `npm install` for release tooling at CI time - that would let an
 # unpinned transitive dependency change what a release does between builds.
-# Instead semantic-release, its plugins, and this repo's validation/version
-# scripts are baked in here once, at image-build time, pinned by
-# package-lock.json. Consumer .gitlab-ci.yml jobs just call `semantic-release`
-# or `node $WP_CI_SCRIPTS/<name>.mjs` directly against their own repo.
+# Instead semantic-release, its plugins, and this repo's validation, versioning,
+# packaging, and updater scripts are baked in here once, at image-build time,
+# pinned by package-lock.json. Consumer jobs call `semantic-release`,
+# `node $WP_CI_SCRIPTS/<name>.mjs`, or `bash $WP_CI_SCRIPTS/<name>.sh`
+# directly against their own repository.
 # ---------------------------------------------------------------------------
 WORKDIR /opt/wp-ci
 COPY package.json package-lock.json ./
@@ -70,6 +71,7 @@ ENV PATH="/opt/wp-ci/node_modules/.bin:${PATH}" \
 # Fails the image build immediately if the toolchain is broken, instead of
 # failing inside every consumer pipeline that pulls this tag.
 RUN semantic-release --version \
+    && bash -n scripts/*.sh \
     && node -e "console.log('wp-ci scripts present:', require('node:fs').readdirSync(process.env.WP_CI_SCRIPTS).join(', '))"
 
 WORKDIR /mount
