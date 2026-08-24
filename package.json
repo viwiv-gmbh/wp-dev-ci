@@ -5,7 +5,7 @@
   "description": "Pinned semantic-release toolchain baked into the wp-dev-ci image. Not published; consumed only via `npm ci` during the image build.",
   "license": "MIT",
   "engines": {
-    "node": ">=22.14"
+    "node": ">=22.23.1 <23"
   },
   "scripts": {
     "test:pipeline:scan-pr": "act pull_request -j scan-pr --container-architecture linux/amd64 -P ubuntu-latest=catthehacker/ubuntu:act-latest",

@@ -19,18 +19,27 @@ Instead:
 
 - `semantic-release` and its six plugins are installed once, at image build
   time, pinned by this repo's `package-lock.json` (`Dockerfile`).
-- The validation/version scripts (`scripts/*.mjs`) are copied into the image
-  at `/opt/wp-ci/scripts`, exposed to every job as `$WP_CI_SCRIPTS`.
-- Consumer pipelines call `semantic-release` and `node $WP_CI_SCRIPTS/<script>.mjs`
-  directly - nothing to install, identical behavior on every run, and a
+- Validation/version scripts and shared packaging/updater utilities (`scripts/`)
+  are copied into the image at `/opt/wp-ci/scripts`, exposed to every job as
+  `$WP_CI_SCRIPTS`.
+- Consumer pipelines call `semantic-release`, `node $WP_CI_SCRIPTS/<script>.mjs`,
+  or `bash $WP_CI_SCRIPTS/<script>.sh` directly - nothing to install,
+  identical behavior on every run, and a
   single place (this repo) to patch a bug in the release logic for every
   project using the image.
 
-A given plugin/theme/block still keeps its own `package.json` for its own
-`lint`/`test`/`build`/`package` scripts - those are project-specific and stay
-in the project.
+A given plugin/theme/block still keeps its own `package.json`. Its
+`lint`/`test`/`build` commands remain project-specific. Projects using an
+rsync allowlist can point `package` at `$WP_CI_SCRIPTS/build-zip.sh`; only the
+project-specific `dist.include` allowlist stays in the consumer repository.
 
 ## Setting up a new consuming project
+
+Steps 1-5 below are file changes only and can be delegated to Claude Code:
+copy [`templates/CLAUDE-CODE-SETUP.md`](../templates/CLAUDE-CODE-SETUP.md)
+into the consuming project's repo (or paste its contents into a Claude Code
+session opened there) and have it work through the checklist. Step 6 needs
+GitLab project-settings/admin access an agent won't have, so it stays manual.
 
 1. Add `.gitlab-ci.yml`:
 
@@ -49,9 +58,9 @@ in the project.
    `.gitlab/merge_request_templates/Default.md`.
 5. In the project's `package.json`, add:
    - `lint`, `test`, `build` scripts (whatever the project already uses)
-   - a `package` script that zips the build output to
-     `<packageZip.directory>/<packageZip.slug>-<version>.zip` (e.g. using the
-     `zip` CLI already present in the image)
+   - a `package` script that produces
+     `<packageZip.directory>/<packageZip.slug>-<version>.zip`; projects with a
+     `dist.include` allowlist can call the shared `build-zip.sh`
 6. In GitLab project settings:
    - protect the `main` branch and the `v*` tag pattern (allowed to push:
      no one/maintainers only - the release job pushes via `GITLAB_TOKEN`)
@@ -187,11 +196,10 @@ and - for options with a required path - checks it against the MR diff.
 
 ## Image maintenance notes
 
-- `Dockerfile` pins `node:22-alpine3.20` rather than `node:22-alpine`: Alpine
-  3.24+ dropped the `php82` package in favor of `php83`/`php84`. Pinning the
-  Alpine release keeps the PHP 8.2 runtime this image has always shipped
-  unchanged while still getting a Node runtime new enough for
-  `semantic-release` 25.x (`^22.14.0 || >=24.10.0`).
+- `Dockerfile` pins `node:22.23.1-bookworm-slim`. Node 22.23.1 satisfies the
+  strictest engine requirement in the pinned release toolchain (`^22.22.2 ||
+  >=24.15`). Debian Bookworm keeps PHP 8.2 available after the official Node
+  images stopped publishing current Node 22 patch releases for Alpine 3.20.
 - `git` was added to the package list - previously absent, but
   `semantic-release`'s plugins (`commit-analyzer`, `git`, `gitlab`) all shell
   out to it directly.

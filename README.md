@@ -23,14 +23,14 @@ docker build --platform linux/arm64 -t viwiv/wp-dev-ci:node-22-arm64 .
 
 ## Included toolchain (high level)
 
-- Node.js 22 (Alpine 3.20 base - see [docs/WORDPRESS-CI-WORKFLOW.md](docs/WORDPRESS-CI-WORKFLOW.md#image-maintenance-notes))
+- Node.js 22.23.1 (Debian Bookworm base - see [docs/WORDPRESS-CI-WORKFLOW.md](docs/WORDPRESS-CI-WORKFLOW.md#image-maintenance-notes))
 - npm (latest), git
 - PHP 8.2 with common extensions (pdo, session, tokenizer, fileinfo, xml, redis, sqlite, mysql)
 - Composer
-- build tools (make, g++, rsync, openssh, zip, unzip)
+- build tools (make, g++, rsync, OpenSSH client, zip, unzip)
 - a pinned `semantic-release` toolchain (+ commit-analyzer, release-notes-generator,
   changelog, git, gitlab, exec plugins) and a set of version-sync/validation
-  Node scripts, baked in at `/opt/wp-ci` (`$WP_CI_SCRIPTS`) - see below
+  Node and shell scripts, baked in at `/opt/wp-ci` (`$WP_CI_SCRIPTS`) - see below
 
 ## WordPress semantic-release pipeline
 
@@ -51,6 +51,27 @@ repository and is loaded via the central GitLab template.
   `wp-ci.config.json` examples (plugin/theme/block), and an MR description
   template
 - **Full walkthrough:** [docs/WORDPRESS-CI-WORKFLOW.md](docs/WORDPRESS-CI-WORKFLOW.md)
+
+### Shared release scripts
+
+Projects with a `dist.include` rsync allowlist can use the shared ZIP builder:
+
+```bash
+bash "$WP_CI_SCRIPTS/build-zip.sh" VERSION example-plugin
+```
+
+The arguments are version, package slug, optional output directory (default
+`dist`), and optional allowlist path (default `dist.include`). The builder
+removes stale ZIP/checksum artifacts before creating the current package.
+
+Plugin deployment jobs can generate updater metadata without a project-local
+script:
+
+```bash
+bash "$WP_CI_SCRIPTS/generate-update-json.sh" \
+  example-plugin.php dist/example-plugin-update.json \
+  https://plugins.example.com/example-plugin.zip
+```
 
 ## Automated release
 
@@ -108,6 +129,18 @@ What each script actually proves, and its limits:
 
 Both scripts therefore exit non-zero on a *successful* local test run - check
 the log for which step failed and why, don't rely on the exit code alone.
+
+- **`scan-pr` and `build-and-push` only run when a file listed in the
+  `changes` job's `dorny/paths-filter` filter (`Dockerfile`,
+  `.dockerignore`, `package.json`, `package-lock.json`, `scripts/**`, or the
+  workflow file itself) actually changed** - a PR/push touching only
+  `docs/`, `templates/`, or `README.md` skips both jobs on real GitHub.
+  `act`'s synthetic `pull_request` event has no real base/head diff, so it
+  may report zero changed files and skip `scan-pr` locally even when
+  testing a real Dockerfile change - a local `act` artifact, not a workflow
+  bug. `test:pipeline:build-and-push` is unaffected (`workflow_dispatch`
+  always bypasses the filter) and remains the reliable local check that the
+  real `Dockerfile` still builds via buildx.
 
 ## Maintenance contract boundaries
 

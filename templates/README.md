@@ -11,3 +11,4 @@ image. Full walkthrough: [`../docs/WORDPRESS-CI-WORKFLOW.md`](../docs/WORDPRESS-
 | `wp-ci.config.theme.example.json` | `wp-ci.config.json` | Version sources for a **theme** project |
 | `wp-ci.config.block.example.json` | `wp-ci.config.json` | Version sources for a **block** project |
 | `merge_request_templates/Default.md` | `.gitlab/merge_request_templates/Default.md` | Pre-fills the documentation-policy checklist on every new MR |
+| `CLAUDE-CODE-SETUP.md` | not copied as-is - paste into the consumer repo and hand to Claude Code | Self-contained checklist that has an AI agent perform the copy/adjust steps above (1-6 minus GitLab project settings) automatically |
