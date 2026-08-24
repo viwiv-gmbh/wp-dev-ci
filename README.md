@@ -40,6 +40,12 @@ Conventional Commits validation, generated-file/version protection, a
 documentation policy gate, and a `semantic-release`-driven release job that
 tags, changelogs, and publishes a GitLab Release with a checksummed ZIP.
 
+Consumer repositories should stay intentionally thin: keep only the
+project-specific rules in their own repo (for example SSH deploys, server
+variables, and plugin-specific release packaging), while the reusable MR,
+version, package, and release logic remains in this shared `wp-dev-ci`
+repository and is loaded via the central GitLab template.
+
 - `scripts/` - the validation/version scripts, copied into the image
 - `templates/` - copyable `.gitlab-ci.yml` include, `.releaserc.json`,
   `wp-ci.config.json` examples (plugin/theme/block), and an MR description
